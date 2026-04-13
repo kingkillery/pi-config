@@ -1,0 +1,21 @@
+# Profiles - don't commit sensitive data
+profiles/*/
+!profiles/*/
+profiles/**/auth.json
+profiles/**/.env
+
+# Session history
+**/sessions/*.jsonl
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.bak

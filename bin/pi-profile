@@ -1,0 +1,744 @@
+#!/usr/bin/env bash
+#===============================================================================
+# pi-profile - Profile management for pi coding agent
+# 
+# Manages isolated profile directories with their own:
+#   - auth.json (API keys)
+#   - settings.json (preferences)
+#   - models.json (custom models)
+#   - sessions/ (conversation history)
+#   - skills/, prompts/, themes/, extensions/
+#
+# Usage:
+#   pi-profile list              List all profiles
+#   pi-profile create <name>     Create new profile
+#   pi-profile use <name>        Set as sticky default
+#   pi-profile show [name]       Show profile details
+#   pi-profile delete <name>     Delete a profile
+#   pi-profile rename <old> <new> Rename a profile
+#   pi-profile copy <from> <to>  Copy profile
+#   pi-profile export <name> [file] Export to tar.gz
+#   pi-profile import <file> [name] Import from tar.gz
+#   pi-profile shell <name> [cmd...] Run command with profile env
+#   pi-profile edit <name>      Open profile in editor
+#   pi-profile diff <a> <b>      Diff two profiles
+#===============================================================================
+
+set -e
+
+# Derive PI_BASE from environment or script location
+# Check multiple possible locations for the .pi directory
+find_pi_base() {
+    # Priority 1: Environment variable
+    if [[ -n "$PI_CODING_AGENT_DIR" ]]; then
+        echo "$PI_CODING_AGENT_DIR"
+        return
+    fi
+    
+    # Get script directory - use find to locate it reliably
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+    
+    # The script should be in ~/.pi/bin/, so go up one level
+    if [[ "$script_dir" == */bin ]]; then
+        local candidate="${script_dir%/bin}"
+        if [[ -d "$candidate/agent" ]]; then
+            echo "$candidate"
+            return
+        fi
+    fi
+    
+    # Try to find .pi directory using find command
+    # Look for the pi-profile script and use its location
+    local pi_base
+    pi_base="$(find "$(dirname "${script_dir}")" -name "agent" -type d 2>/dev/null | head -1)"
+    if [[ -n "$pi_base" ]]; then
+        echo "$(dirname "$pi_base")"
+        return
+    fi
+    
+    # Fallback: try to find any .pi directory with agent subdir
+    pi_base="$(find /home /c /mnt/c -maxdepth 2 -name "agent" -type d 2>/dev/null | head -1)"
+    if [[ -n "$pi_base" ]]; then
+        echo "$(dirname "$pi_base")"
+        return
+    fi
+    
+    # Last resort: use HOME/.pi
+    echo "$HOME/.pi"
+}
+
+PI_BASE="$(find_pi_base)"
+PROFILES_DIR="$PI_BASE/profiles"
+CURRENT_PROFILE_FILE="$PI_BASE/current-profile"
+AGENT_DIR="$PI_BASE/agent"
+
+#-------------------------------------------------------------------------------
+# Helper Functions
+#-------------------------------------------------------------------------------
+
+usage() {
+    cat << EOF
+${BOLD}pi-profile${NC} - Profile management for pi coding agent
+
+${BOLD}USAGE${NC}
+    pi-profile <command> [arguments]
+
+${BOLD}COMMANDS${NC}
+    list                        List all profiles
+    create <name>              Create a new profile
+    use <name>                  Set as sticky default
+    show [name]                 Show profile details (default: current)
+    delete <name>               Delete a profile
+    rename <old> <new>          Rename a profile
+    copy <from> <to>            Copy a profile
+    export <name> [file]        Export to tar.gz
+    import <file> [name]         Import from tar.gz
+    shell <name> [cmd...]       Run command with profile active
+    edit [name]                 Open profile in \$EDITOR
+    diff <a> <b>                Diff two profiles
+
+${BOLD}EXAMPLES${NC}
+    pi-profile list
+    pi-profile create work
+    pi-profile create personal
+    pi-profile use work
+    pi-profile show
+    pi-profile export work ~/work-profile.tar.gz
+    pi-profile import ~/new-machine.tar.gz dev
+
+${BOLD}PROFILE LAYOUT${NC}
+    ~/.pi/
+    ├── agent/                  # Default profile (always exists)
+    │   ├── auth.json
+    │   ├── settings.json
+    │   ├── models.json
+    │   └── sessions/
+    ├── profiles/
+    │   ├── work/
+    │   │   ├── auth.json
+    │   │   ├── settings.json
+    │   │   └── sessions/
+    │   └── personal/
+    │       └── ...
+    └── current-profile          # Contains active profile name
+
+${BOLD}ENVIRONMENT${NC}
+    PI_PROFILE=<name>           Override active profile (per-session)
+    PI_CODING_AGENT_DIR=<path>  Full override (native pi env var)
+
+EOF
+}
+
+error() {
+    echo -e "${RED}Error:${NC} $*" >&2
+    exit 1
+}
+
+warn() {
+    echo -e "${YELLOW}Warning:${NC} $*"
+}
+
+info() {
+    echo -e "${BLUE}Info:${NC} $*"
+}
+
+success() {
+    echo -e "${GREEN}✓${NC} $*"
+}
+
+get_current_profile() {
+    if [[ -f "$CURRENT_PROFILE_FILE" ]]; then
+        cat "$CURRENT_PROFILE_FILE"
+    elif [[ -n "$PI_PROFILE" ]]; then
+        echo "$PI_PROFILE"
+    else
+        echo ""
+    fi
+}
+
+get_profile_dir() {
+    local name="$1"
+    echo "$PROFILES_DIR/$name"
+}
+
+get_active_dir() {
+    local current
+    current=$(get_current_profile)
+    if [[ -n "$current" ]]; then
+        get_profile_dir "$current"
+    else
+        echo "$AGENT_DIR"
+    fi
+}
+
+validate_name() {
+    local name="$1"
+    if [[ ! "$name" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
+        error "Invalid profile name '$name'. Use letters, numbers, hyphens, underscores. Cannot start with number or hyphen."
+    fi
+    if [[ "$name" == "agent" ]]; then
+        error "'agent' is a reserved name. Choose a different name."
+    fi
+}
+
+ensure_dirs() {
+    mkdir -p "$PROFILES_DIR" "$AGENT_DIR"
+}
+
+#-------------------------------------------------------------------------------
+# Commands
+#-------------------------------------------------------------------------------
+
+cmd_list() {
+    echo ""
+    echo -e "${BOLD}Pi Profiles${NC}"
+    echo "============="
+    echo ""
+    
+    local current
+    current=$(get_current_profile)
+    
+    # Always show default
+    if [[ "$current" == "" ]]; then
+        echo -e "  ${GREEN}*${NC} ${BOLD}default${NC}  ← active"
+    else
+        echo -e "    default"
+    fi
+    echo "    $AGENT_DIR"
+    echo ""
+    
+    # Show profiles
+    if [[ -d "$PROFILES_DIR" ]]; then
+        local count=0
+        while IFS= read -r profile; do
+            ((count++))
+            local dir="$PROFILES_DIR/$profile"
+            if [[ "$profile" == "$current" ]]; then
+                echo -e "  ${GREEN}*${NC} ${BOLD}$profile${NC}  ← active"
+            else
+                echo -e "    $profile"
+            fi
+            echo "    $dir"
+            echo ""
+        done < <(ls -1 "$PROFILES_DIR" 2>/dev/null)
+        
+        if [[ $count -eq 0 ]]; then
+            echo "  No profiles created yet."
+            echo ""
+        fi
+    else
+        echo "  No profiles directory yet. Run 'pi-profile create <name>' to create one."
+        echo ""
+    fi
+}
+
+cmd_create() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        error "Usage: pi-profile create <name>"
+    fi
+    
+    validate_name "$name"
+    ensure_dirs
+    
+    local dir
+    dir=$(get_profile_dir "$name")
+    
+    if [[ -d "$dir" ]]; then
+        error "Profile '$name' already exists at $dir"
+    fi
+    
+    # Create profile directory structure
+    mkdir -p "$dir"/{sessions,skills,prompts,themes,extensions}
+    
+    # Copy default settings if exists
+    if [[ -f "$AGENT_DIR/settings.json" ]]; then
+        cp "$AGENT_DIR/settings.json" "$dir/settings.json"
+    else
+        echo '{}' > "$dir/settings.json"
+    fi
+    
+    # Create empty auth file template
+    if [[ ! -f "$dir/auth.json" ]]; then
+        echo '{"providers": {}}' > "$dir/auth.json"
+    fi
+    
+    # Create models file if exists
+    if [[ -f "$AGENT_DIR/models.json" ]]; then
+        cp "$AGENT_DIR/models.json" "$dir/models.json"
+    fi
+    
+    success "Created profile '$name' at $dir"
+    info "Use 'pi-profile use $name' to activate it"
+}
+
+cmd_use() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        error "Usage: pi-profile use <name>"
+    fi
+    
+    if [[ "$name" == "default" ]]; then
+        # Remove current profile marker
+        if [[ -f "$CURRENT_PROFILE_FILE" ]]; then
+            rm "$CURRENT_PROFILE_FILE"
+        fi
+        success "Using default profile (global ~/.pi/agent/)"
+        return
+    fi
+    
+    validate_name "$name"
+    
+    local dir
+    dir=$(get_profile_dir "$name")
+    
+    if [[ ! -d "$dir" ]]; then
+        error "Profile '$name' does not exist. Run 'pi-profile create $name' first."
+    fi
+    
+    echo "$name" > "$CURRENT_PROFILE_FILE"
+    success "Switched to profile '$name'"
+    info "Active directory: $dir"
+}
+
+cmd_show() {
+    local name="${1:-$(get_current_profile)}"
+    
+    if [[ -z "$name" ]]; then
+        echo ""
+        echo -e "${BOLD}Current Profile: ${GREEN}default${NC}"
+        echo "========================"
+        echo ""
+        echo "Using global agent directory:"
+        echo "  $AGENT_DIR"
+        echo ""
+        cmd_show_dir "$AGENT_DIR"
+        return
+    fi
+    
+    if [[ "$name" != "default" ]]; then
+        validate_name "$name" 2>/dev/null || true
+    fi
+    
+    local dir
+    if [[ "$name" == "default" ]]; then
+        dir="$AGENT_DIR"
+    else
+        dir=$(get_profile_dir "$name")
+    fi
+    
+    echo ""
+    echo -e "${BOLD}Profile: ${GREEN}$name${NC}"
+    echo "==============="
+    echo ""
+    echo "Location: $dir"
+    echo ""
+    
+    cmd_show_dir "$dir"
+    
+    # Check if this is the active profile
+    local current
+    current=$(get_current_profile)
+    if [[ "$name" == "$current" ]]; then
+        echo -e "${GREEN}✓${NC} Currently active"
+    fi
+}
+
+cmd_show_dir() {
+    local dir="$1"
+    
+    echo -e "${BOLD}Contents:${NC}"
+    
+    # Auth
+    if [[ -f "$dir/auth.json" ]]; then
+        local auth_size
+        auth_size=$(wc -c < "$dir/auth.json")
+        if [[ $auth_size -gt 50 ]]; then
+            echo "  ✓ auth.json ($(numfmt --to=iec $auth_size 2>/dev/null || echo "${auth_size}B"))"
+        else
+            echo "  ○ auth.json (empty)"
+        fi
+    else
+        echo "  - auth.json (not set)"
+    fi
+    
+    # Settings
+    if [[ -f "$dir/settings.json" ]]; then
+        echo "  ✓ settings.json"
+    else
+        echo "  ○ settings.json (default)"
+    fi
+    
+    # Models
+    if [[ -f "$dir/models.json" ]]; then
+        echo "  ✓ models.json"
+    else
+        echo "  ○ models.json (inherited)"
+    fi
+    
+    # Sessions
+    if [[ -d "$dir/sessions" ]]; then
+        local session_count
+        session_count=$(find "$dir/sessions" -name "*.jsonl" 2>/dev/null | wc -l)
+        if [[ $session_count -gt 0 ]]; then
+            echo "  ✓ sessions/ ($session_count files)"
+        else
+            echo "  ○ sessions/ (empty)"
+        fi
+    else
+        echo "  - sessions/ (not created)"
+    fi
+    
+    # Skills
+    if [[ -d "$dir/skills" ]] && [[ -n "$(ls -A "$dir/skills" 2>/dev/null)" ]]; then
+        local skill_count
+        skill_count=$(find "$dir/skills" -name "SKILL.md" 2>/dev/null | wc -l)
+        echo "  ✓ skills/ ($skill_count skills)"
+    else
+        echo "  ○ skills/ (none)"
+    fi
+    
+    # Extensions
+    if [[ -d "$dir/extensions" ]] && [[ -n "$(ls -A "$dir/extensions" 2>/dev/null)" ]]; then
+        local ext_count
+        ext_count=$(find "$dir/extensions" -name "*.ts" -o -name "*.js" 2>/dev/null | wc -l)
+        echo "  ✓ extensions/ ($ext_count files)"
+    else
+        echo "  ○ extensions/ (none)"
+    fi
+    
+    echo ""
+}
+
+cmd_delete() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        error "Usage: pi-profile delete <name>"
+    fi
+    
+    validate_name "$name"
+    
+    local dir
+    dir=$(get_profile_dir "$name")
+    
+    if [[ ! -d "$dir" ]]; then
+        error "Profile '$name' does not exist"
+    fi
+    
+    # Check if active
+    local current
+    current=$(get_current_profile)
+    if [[ "$name" == "$current" ]]; then
+        warn "This is the currently active profile!"
+        info "Run 'pi-profile use default' first to switch away"
+        exit 1
+    fi
+    
+    echo -n "Delete profile '$name' at $dir? [y/N] "
+    read -r confirm
+    
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        rm -rf "$dir"
+        success "Deleted profile '$name'"
+    else
+        info "Cancelled"
+    fi
+}
+
+cmd_rename() {
+    local old="$1"
+    local new="$2"
+    
+    if [[ -z "$old" || -z "$new" ]]; then
+        error "Usage: pi-profile rename <old> <new>"
+    fi
+    
+    validate_name "$old"
+    validate_name "$new"
+    
+    local old_dir
+    old_dir=$(get_profile_dir "$old")
+    local new_dir
+    new_dir=$(get_profile_dir "$new")
+    
+    if [[ ! -d "$old_dir" ]]; then
+        error "Profile '$old' does not exist"
+    fi
+    
+    if [[ -d "$new_dir" ]]; then
+        error "Profile '$new' already exists"
+    fi
+    
+    mv "$old_dir" "$new_dir"
+    
+    # Update current if needed
+    local current
+    current=$(get_current_profile)
+    if [[ "$old" == "$current" ]]; then
+        echo "$new" > "$CURRENT_PROFILE_FILE"
+        info "Updated active profile marker"
+    fi
+    
+    success "Renamed '$old' to '$new'"
+}
+
+cmd_copy() {
+    local from="$1"
+    local to="$2"
+    
+    if [[ -z "$from" || -z "$to" ]]; then
+        error "Usage: pi-profile copy <from> <to>"
+    fi
+    
+    validate_name "$from"
+    validate_name "$to"
+    
+    local from_dir
+    from_dir=$(get_profile_dir "$from")
+    local to_dir
+    to_dir=$(get_profile_dir "$to")
+    
+    if [[ ! -d "$from_dir" ]]; then
+        error "Profile '$from' does not exist"
+    fi
+    
+    if [[ -d "$to_dir" ]]; then
+        error "Profile '$to' already exists. Delete it first or use a different name."
+    fi
+    
+    cp -r "$from_dir" "$to_dir"
+    success "Copied '$from' to '$to'"
+    info "Use 'pi-profile use $to' to activate it"
+}
+
+cmd_export() {
+    local name="$1"
+    local output="${2:-${name}.tar.gz}"
+    
+    if [[ -z "$name" ]]; then
+        error "Usage: pi-profile export <name> [output-file]"
+    fi
+    
+    validate_name "$name"
+    ensure_dirs
+    
+    local dir
+    if [[ "$name" == "default" ]]; then
+        dir="$AGENT_DIR"
+    else
+        dir=$(get_profile_dir "$name")
+    fi
+    
+    if [[ ! -d "$dir" ]]; then
+        error "Profile '$name' does not exist"
+    fi
+    
+    # Create tarball, excluding large session files by default
+    info "Exporting profile '$name'..."
+    
+    tar -czf "$output" -C "$(dirname "$dir")" "$(basename "$dir")"
+    success "Exported to $output"
+    info "Size: $(du -h "$output" | cut -f1)"
+}
+
+cmd_import() {
+    local input="$1"
+    local name="${2:-$(basename "$input" .tar.gz)}"
+    
+    if [[ -z "$input" ]]; then
+        error "Usage: pi-profile import <file> [name]"
+    fi
+    
+    if [[ ! -f "$input" ]]; then
+        error "File not found: $input"
+    fi
+    
+    validate_name "$name"
+    ensure_dirs
+    
+    local dir
+    dir=$(get_profile_dir "$name")
+    
+    if [[ -d "$dir" ]]; then
+        error "Profile '$name' already exists. Delete it first or use a different name."
+    fi
+    
+    info "Importing from $input..."
+    
+    mkdir -p "$PROFILES_DIR"
+    tar -xzf "$input" -C "$PROFILES_DIR"
+    
+    # The extracted directory might have a different name
+    local extracted
+    extracted=$(tar -tzf "$input" | head -1 | sed 's|/||')
+    if [[ "$extracted" != "$name" ]]; then
+        mv "$PROFILES_DIR/$extracted" "$dir"
+    fi
+    
+    success "Imported as profile '$name'"
+    info "Use 'pi-profile use $name' to activate it"
+}
+
+cmd_shell() {
+    local name="$1"
+    shift
+    
+    if [[ -z "$name" ]]; then
+        error "Usage: pi-profile shell <name> [command...]"
+    fi
+    
+    if [[ "$name" == "default" ]]; then
+        export PI_PROFILE=""
+    else
+        validate_name "$name"
+        export PI_PROFILE="$name"
+    fi
+    
+    if [[ $# -eq 0 ]]; then
+        info "Starting interactive shell with PI_PROFILE=$PI_PROFILE"
+        info "Run 'exit' to return to your shell"
+        $SHELL
+    else
+        "$@"
+    fi
+}
+
+cmd_edit() {
+    local name="${1:-$(get_current_profile)}"
+    
+    local dir
+    if [[ -z "$name" || "$name" == "default" ]]; then
+        dir="$AGENT_DIR"
+    else
+        dir=$(get_profile_dir "$name")
+    fi
+    
+    if [[ ! -d "$dir" ]]; then
+        error "Profile '$name' does not exist"
+    fi
+    
+    ${EDITOR:-vi} "$dir"
+}
+
+cmd_diff() {
+    local a="$1"
+    local b="$2"
+    
+    if [[ -z "$a" || -z "$b" ]]; then
+        error "Usage: pi-profile diff <profile-a> <profile-b>"
+    fi
+    
+    local dir_a
+    dir_a=$(get_profile_dir "$a")
+    local dir_b
+    dir_b=$(get_profile_dir "$b")
+    
+    if [[ ! -d "$dir_a" ]]; then
+        error "Profile '$a' does not exist"
+    fi
+    if [[ ! -d "$dir_b" ]]; then
+        error "Profile '$b' does not exist"
+    fi
+    
+    if command -v diff &>/dev/null; then
+        diff -ru "$dir_a" "$dir_b" || true
+    else
+        info "diff not available. Showing side-by-side:"
+        echo ""
+        echo "=== Profile: $a ==="
+        ls -la "$dir_a"
+        echo ""
+        echo "=== Profile: $b ==="
+        ls -la "$dir_b"
+    fi
+}
+
+#-------------------------------------------------------------------------------
+# Wrapper Generator
+#-------------------------------------------------------------------------------
+
+cmd_wrapper() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        error "Usage: pi-profile wrapper <name>"
+    fi
+    
+    validate_name "$name"
+    
+    local wrapper_dir="${PI_WRAPPER_DIR:-$HOME/.local/bin}"
+    mkdir -p "$wrapper_dir"
+    
+    local wrapper_path="$wrapper_dir/pi-$name"
+    
+    cat > "$wrapper_path" << EOF
+#!/usr/bin/env bash
+# Auto-generated by pi-profile
+# Profile: $name
+export PI_PROFILE="$name"
+exec pi "\$@"
+EOF
+    
+    chmod +x "$wrapper_path"
+    success "Created wrapper: $wrapper_path"
+    info "You can now run 'pi-$name' to use the '$name' profile"
+}
+
+#-------------------------------------------------------------------------------
+# Main
+#-------------------------------------------------------------------------------
+
+main() {
+    local command="${1:-}"
+    
+    case "$command" in
+        list|ls)
+            cmd_list
+            ;;
+        create|new)
+            cmd_create "$2"
+            ;;
+        use|switch)
+            cmd_use "$2"
+            ;;
+        show|info)
+            cmd_show "$2"
+            ;;
+        delete|rm|remove)
+            cmd_delete "$2"
+            ;;
+        rename|mv)
+            cmd_rename "$2" "$3"
+            ;;
+        copy|cp)
+            cmd_copy "$2" "$3"
+            ;;
+        export|dump)
+            cmd_export "$2" "$3"
+            ;;
+        import|load)
+            cmd_import "$2" "$3"
+            ;;
+        shell|run)
+            shift
+            cmd_shell "$@"
+            ;;
+        edit|vim|nano)
+            cmd_edit "$2"
+            ;;
+        diff)
+            cmd_diff "$2" "$3"
+            ;;
+        wrapper|wrap)
+            cmd_wrapper "$2"
+            ;;
+        help|--help|-h|"")
+            usage
+            ;;
+        *)
+            error "Unknown command: $command"
+            ;;
+    esac
+}
+
+main "$@"
