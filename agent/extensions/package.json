@@ -1,0 +1,13 @@
+{
+  "name": "pi-extensions",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test *.test.mjs",
+    "typecheck": "node \"C:/Users/prest/AppData/Roaming/npm/node_modules/oh-my-codex/node_modules/typescript/bin/tsc\" --noEmit",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "^0.68.0"
+  }
+}

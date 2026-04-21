@@ -51,12 +51,15 @@ MiniMax track: minimax -> minimax -> openrouter -> minimax -> minimax -> ...
 
 ### How it works
 
-The `before_completion` hook intercepts outgoing requests:
+The `before_agent_start` event fires before each agent turn. The hook:
 
-1. Check provider/model against track definitions
-2. Skip if provider is already `openrouter` (prevents re-entry)
-3. Increment the track's turn counter
-4. If `turnCount % every === 0`, override provider to `openrouter`
+1. Reads the current model from `ctx.model` (provider + model ID)
+2. Matches provider/model against track definitions
+3. Increments the track's turn counter
+4. If `turnCount % every === 0`, finds the OpenRouter model via
+   `ctx.modelRegistry.find()` and switches with `pi.setModel()`
+5. On non-openrouter turns, restores the native model if the previous
+   turn had switched to openrouter
 
 State persists in `sessions/_provider-rotation-state.json`.
 
@@ -276,6 +279,25 @@ Unicode characters and 24-bit ANSI color.
 ---
 
 ## Changelog
+
+### 2026-04-21
+
+**All extensions — API correctness audit**
+- Replaced `before_completion` (non-existent event) with `before_agent_start`
+  in minimax-rotation.ts; use `ctx.modelRegistry.find()` + `pi.setModel()`
+- Rewrote all `registerCommand(name, fn)` calls to options-object form
+  `{description, handler}` — bare-function form silently drops the handler
+- Replaced `ctx.session.prompt()` (non-existent) with `pi.sendUserMessage()`
+  in omc-bridge.ts
+- Replaced `pi.notify()` with `ctx.ui.notify()` throughout
+- Routed all command output through `pi.sendMessage()` — return values ignored
+- Fixed `registerTool`: added `label`, fixed `execute` signature, fixed
+  `AgentToolResult` return shape
+- Added `tsconfig.json` with local `node_modules` paths alias
+- Added `package.json` with pinned `@mariozechner/pi-coding-agent@^0.68.0`
+  and `npm run check` script (typecheck + 18 smoke tests)
+- Added `omc-bridge.test.mjs` (6 assertions)
+- tsc: zero errors. Smoke tests: 18/18 pass.
 
 ### 2026-04-15
 
