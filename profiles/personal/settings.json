@@ -1,0 +1,21 @@
+{
+  "lastChangelogVersion": "0.66.1",
+  "defaultProvider": "minimax",
+  "defaultModel": "MiniMax-M2.7-highspeed",
+  "shellPath": "C:\\Program Files\\Git\\usr\\bin\\bash.exe",
+  "enabledModels": [
+    "zai/glm-5.1",
+    "minimax/MiniMax-M2.7-highspeed",
+    "openai-codex/gpt-5.4"
+  ],
+  "packages": [
+    "npm:@aliou/pi-guardrails",
+    "npm:pi-ask-user",
+    "npm:@jay-zod/speakturbo",
+    "npm:pk-pi-hermes-evolve"
+  ],
+  "extensions": [
+    "C:\\dev\\Desktop-Projects\\pi-speak-extension\\index.ts"
+  ],
+  "defaultThinkingLevel": "high"
+}

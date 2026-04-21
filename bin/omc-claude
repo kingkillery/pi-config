@@ -1,0 +1,4 @@
+#!/bin/bash
+# omc-claude - Original Claude Code OMC (oh-my-claude-sisyphus)
+# Use this to access the Claude Code version of OMC
+exec "$HOME/AppData/Roaming/npm/node_modules/oh-my-claude-sisyphus/bridge/cli.cjs" "$@"

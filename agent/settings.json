@@ -1,0 +1,28 @@
+{
+  "lastChangelogVersion": "0.68.0",
+  "defaultProvider": "openrouter",
+  "defaultModel": "z-ai/glm-5.1",
+  "shellPath": "C:\\Program Files\\Git\\usr\\bin\\bash.exe",
+  "enabledModels": [
+    "zai/glm-5.1",
+    "minimax/MiniMax-M2.7-highspeed",
+    "openai-codex/gpt-5.4",
+    "openrouter/z-ai/glm-5.1",
+    "openrouter/minimax/minimax-m2.7"
+  ],
+  "packages": [
+    "npm:@aliou/pi-guardrails",
+    "npm:pi-ask-user",
+    "npm:pk-pi-hermes-evolve",
+    "npm:pi-llm-as-verifier",
+    "npm:pi-speak-pk@latest",
+    "npm:pi-subagents"
+  ],
+  "extensions": [
+    "C:\\dev\\Desktop-Projects\\pi-speak-extension\\dist\\index.js"
+  ],
+  "defaultThinkingLevel": "high",
+  "followUpMode": "one-at-a-time",
+  "autocompleteMaxVisible": 20,
+  "hideThinkingBlock": true
+}

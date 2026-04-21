@@ -21,8 +21,9 @@
  *   /profile edit [name]      - Open profile in explorer
  */
 
-import { homedir, join } from "path";
-import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, rmSync, cpSync, readdir } from "fs";
+import { join } from "path";
+import { homedir } from "os";
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, rmSync, cpSync } from "fs";
 import { execSync } from "child_process";
 
 export default function (pi: ExtensionAPI) {
@@ -291,33 +292,24 @@ export default function (pi: ExtensionAPI) {
     return output;
   }
 
-  function cmdDelete(name: string): { text: string; needsConfirmation?: boolean } {
+  function cmdDelete(name: string): string {
     const validation = validateName(name);
     if (!validation.valid) {
-      return { text: `${c("red", "Error:")} ${validation.error}` };
+      return `${c("red", "Error:")} ${validation.error}`;
     }
 
     const dir = getProfileDir(name);
     if (!existsSync(dir)) {
-      return { text: `${c("red", "Error:")} Profile '${name}' does not exist` };
+      return `${c("red", "Error:")} Profile '${name}' does not exist`;
     }
 
     const current = getCurrentProfile();
     if (name === current) {
-      return {
-        text: `${c("yellow", "Warning:")} This is the currently active profile!\nRun ${c("blue", "'/profile use default'")} first to switch away`,
-        needsConfirmation: false
-      };
+      return `${c("yellow", "Warning:")} This is the currently active profile!\nRun ${c("blue", "'/profile use default'")} first to switch away`;
     }
 
-    return {
-      text: `Delete profile '${name}' at ${dir}?`,
-      needsConfirmation: true,
-      confirmAction: () => {
-        rmSync(dir, { recursive: true });
-        return `${c("green", "✓")} Deleted profile '${name}'`;
-      }
-    };
+    rmSync(dir, { recursive: true });
+    return `${c("green", "✓")} Deleted profile '${name}' (was at ${dir})`;
   }
 
   function cmdRename(oldName: string, newName: string): string {
@@ -527,7 +519,7 @@ ${c("bold", "Profile Layout:")}
       case "rm":
       case "remove":
         if (!rest[0]) return `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile delete <name>'")}`;
-        return cmdDelete(rest[0]).text;
+        return cmdDelete(rest[0]);
 
       case "rename":
       case "mv":
@@ -584,15 +576,10 @@ ${c("bold", "Profile Layout:")}
   // Hook: Inject profile context into session
   // ---------------------------------------------------------------------------
 
-  pi.on("session_start", async (event: SessionStartEvent) => {
+  pi.on("session_start", async (_event, ctx) => {
     const currentProfile = getCurrentProfile();
     if (currentProfile) {
-      // Notify that a profile is active
-      pi.notify({
-        level: "info",
-        message: `Profile '${currentProfile}' is active. Run '/profile list' to switch.`,
-        persistent: false
-      });
+      ctx.ui.notify(`Profile '${currentProfile}' is active. Run '/profile list' to switch.`, "info");
     }
   });
 
@@ -602,8 +589,9 @@ ${c("bold", "Profile Layout:")}
 
   pi.registerTool({
     name: "profile",
+    label: "Profile",
     description: "Manage pi coding agent profiles. Each profile has isolated auth, settings, sessions, skills, and extensions.",
-    params: {
+    parameters: {
       type: "object",
       properties: {
         action: {
@@ -634,7 +622,7 @@ ${c("bold", "Profile Layout:")}
       },
       required: ["action"]
     },
-    async execute(params) {
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       const { action, name, new_name, from, to, file } = params;
 
       switch (action) {
@@ -650,7 +638,7 @@ ${c("bold", "Profile Layout:")}
           return cmdShow(name);
         case "delete":
           if (!name) throw new Error("Profile name required");
-          return cmdDelete(name).text;
+          return cmdDelete(name);
         case "rename":
           if (!name || !new_name) throw new Error("Both old and new name required");
           return cmdRename(name, new_name);

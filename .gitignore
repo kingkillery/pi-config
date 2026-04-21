@@ -1,11 +1,13 @@
-# Profiles - don't commit sensitive data
-profiles/*/
-!profiles/*/
-profiles/**/auth.json
+# Auth — never commit regardless of location
+auth.json
+**/auth.json
+
+# Profiles - exclude session data
 profiles/**/.env
+profiles/**/sessions/
 
 # Session history
-**/sessions/*.jsonl
+agent/sessions/
 
 # OS files
 .DS_Store
@@ -19,3 +21,27 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+*.bak-*
+
+# Windows null-device redirect artifacts
+nul
+NUL
+
+# Node
+node_modules/
+
+# Vendored binaries
+agent/bin/
+**/*.exe
+
+# Claude Code and OMC/OMX runtime state (local only)
+.claude/
+.omc/
+agent/.claude/
+agent/.omx/
+
+# Diagnostic/investigation dumps
+root-artifacts/
+
+# Imported skills (large external package, not owned here)
+agent/skills/pk-skills1-imported/

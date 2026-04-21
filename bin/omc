@@ -1,0 +1,30 @@
+#!/bin/bash
+# omc - Launch pi coding agent with OMC orchestration layer
+#
+# This wrapper makes 'omc' start pi instead of Claude Code,
+# pre-loading the OMC bridge extension and system prompt.
+#
+# Original Claude Code OMC remains available as 'omc-claude'.
+
+set -euo pipefail
+
+PI_HOME="${PI_HOME:-$HOME/.pi}"
+PI_AGENT_DIR="${PI_CODING_AGENT_DIR:-$PI_HOME/agent}"
+OMC_BRIDGE="$PI_AGENT_DIR/extensions/omc-bridge.ts"
+OMC_PROMPT="$PI_AGENT_DIR/prompts/omc-system.md"
+
+# Build extension args
+EXT_ARGS=()
+if [[ -f "$OMC_BRIDGE" ]]; then
+  EXT_ARGS+=(--extension "$OMC_BRIDGE")
+fi
+
+# Build system prompt append
+PROMPT_ARGS=()
+if [[ -f "$OMC_PROMPT" ]]; then
+  PROMPT_ARGS+=(--append-system-prompt "$(cat "$OMC_PROMPT")")
+fi
+
+export PI_CODING_AGENT_DIR="$PI_AGENT_DIR"
+
+exec pi "${EXT_ARGS[@]}" "${PROMPT_ARGS[@]}" "$@"
