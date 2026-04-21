@@ -85,7 +85,15 @@ const TRACKS = {
 type TrackName = keyof typeof TRACKS;
 
 export default function (pi: ExtensionAPI): void {
-  const stateDir = join(homedir(), ".pi", "agent", "sessions");
+  // Resolve sessions dir from active profile (same logic as omc-bridge)
+  const piBase = join(homedir(), ".pi");
+  const currentProfileFile = join(piBase, "current-profile");
+  const currentProfile = existsSync(currentProfileFile)
+    ? readFileSync(currentProfileFile, "utf-8").trim()
+    : null;
+  const agentDir = process.env.PI_CODING_AGENT_DIR
+    ?? (currentProfile ? join(piBase, "profiles", currentProfile) : join(piBase, "agent"));
+  const stateDir = join(agentDir, "sessions");
   const stateFile = join(stateDir, "_provider-rotation-state.json");
 
   // Colors
