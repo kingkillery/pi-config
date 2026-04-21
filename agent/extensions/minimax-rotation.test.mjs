@@ -19,9 +19,9 @@ test("uses ctx.ui.notify instead of pi.notify", () => {
   assert.doesNotMatch(src, /pi\.notify\s*\(/, "pi.notify() is not an ExtensionAPI method — use ctx.ui.notify()");
 });
 
-test("before_completion handler accepts ctx parameter", () => {
-  // Match: pi.on("before_completion", async (event[: Type], ctx)
-  assert.match(src, /on\s*\(\s*["']before_completion["']\s*,\s*async\s*\([^)]*,\s*ctx\s*\)/, "before_completion handler should accept (event, ctx)");
+test("uses before_agent_start event (not the invalid before_completion)", () => {
+  assert.match(src, /on\s*\(\s*["']before_agent_start["']/, "must use before_agent_start — before_completion is not a valid ExtensionAPI event");
+  assert.doesNotMatch(src, /on\s*\(\s*["']before_completion["']/, "before_completion is not a valid ExtensionAPI event");
 });
 
 test("registerTool includes required label field", () => {

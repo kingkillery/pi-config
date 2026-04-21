@@ -21,12 +21,13 @@
  *   /profile edit [name]      - Open profile in explorer
  */
 
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { join } from "path";
 import { homedir } from "os";
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, rmSync, cpSync } from "fs";
 import { execSync } from "child_process";
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   // Configuration paths
   const baseDir = join(homedir(), ".pi");
   const profilesDir = join(baseDir, "profiles");
@@ -493,83 +494,109 @@ ${c("bold", "Profile Layout:")}
   // Register Commands
   // ---------------------------------------------------------------------------
 
-  pi.registerCommand("profile", async (args: string[]) => {
-    const [subcommand, ...rest] = args;
+  function emit(text: string): void {
+    pi.sendMessage({ customType: "profile-output", content: text, display: true });
+  }
 
-    switch (subcommand) {
-      case "list":
-      case "ls":
-        return cmdList();
+  pi.registerCommand("profile", {
+    description: "Manage pi coding agent profiles (/profile list|create|use|show|delete|rename|copy|export|import|shell|edit)",
+    handler: async (args) => {
+      const parts = args.trim().split(/\s+/).filter(Boolean);
+      const [subcommand, ...rest] = parts;
 
-      case "create":
-      case "new":
-        if (!rest[0]) return `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile create <name>'")}`;
-        return cmdCreate(rest[0]);
+      switch (subcommand) {
+        case "list":
+        case "ls":
+          emit(cmdList()); break;
 
-      case "use":
-      case "switch":
-        if (!rest[0]) return `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile use <name>'")}`;
-        return cmdUse(rest[0]);
+        case "create":
+        case "new":
+          emit(!rest[0]
+            ? `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile create <name>'")}`
+            : cmdCreate(rest[0]));
+          break;
 
-      case "show":
-      case "info":
-        return cmdShow(rest[0]);
+        case "use":
+        case "switch":
+          emit(!rest[0]
+            ? `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile use <name>'")}`
+            : cmdUse(rest[0]));
+          break;
 
-      case "delete":
-      case "rm":
-      case "remove":
-        if (!rest[0]) return `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile delete <name>'")}`;
-        return cmdDelete(rest[0]);
+        case "show":
+        case "info":
+          emit(cmdShow(rest[0])); break;
 
-      case "rename":
-      case "mv":
-        if (!rest[0] || !rest[1]) return `${c("red", "Error:")} Usage: ${c("blue", "'/profile rename <old> <new>'")}`;
-        return cmdRename(rest[0], rest[1]);
+        case "delete":
+        case "rm":
+        case "remove":
+          emit(!rest[0]
+            ? `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile delete <name>'")}`
+            : cmdDelete(rest[0]));
+          break;
 
-      case "copy":
-      case "cp":
-        if (!rest[0] || !rest[1]) return `${c("red", "Error:")} Usage: ${c("blue", "'/profile copy <from> <to>'")}`;
-        return cmdCopy(rest[0], rest[1]);
+        case "rename":
+        case "mv":
+          emit(!rest[0] || !rest[1]
+            ? `${c("red", "Error:")} Usage: ${c("blue", "'/profile rename <old> <new>'")}`
+            : cmdRename(rest[0], rest[1]));
+          break;
 
-      case "export":
-      case "dump":
-        return cmdExport(rest[0]);
+        case "copy":
+        case "cp":
+          emit(!rest[0] || !rest[1]
+            ? `${c("red", "Error:")} Usage: ${c("blue", "'/profile copy <from> <to>'")}`
+            : cmdCopy(rest[0], rest[1]));
+          break;
 
-      case "import":
-      case "load":
-        if (!rest[0]) return `${c("red", "Error:")} Specify a file: ${c("blue", "'/profile import <file> [name]'")}`;
-        return cmdImport(rest[0], rest[1]);
+        case "export":
+        case "dump":
+          emit(cmdExport(rest[0])); break;
 
-      case "shell":
-      case "run":
-        if (!rest[0]) return `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile shell <name>'")}`;
-        return cmdShell(rest[0]);
+        case "import":
+        case "load":
+          emit(!rest[0]
+            ? `${c("red", "Error:")} Specify a file: ${c("blue", "'/profile import <file> [name]'")}`
+            : cmdImport(rest[0], rest[1]));
+          break;
 
-      case "edit":
-        const dir = rest[0] === "default" || !rest[0]
-          ? (rest[0] === "default" ? agentDir : (getCurrentProfile() ? getProfileDir(getCurrentProfile()!) : agentDir))
-          : getProfileDir(rest[0]);
-        try {
-          execSync(`start "" "${dir}"`, { shell: "cmd.exe", stdio: "ignore" });
-          return `${c("green", "✓")} Opening ${dir}`;
-        } catch {
-          return `${c("blue", "→")} Open manually: ${dir}`;
+        case "shell":
+        case "run":
+          emit(!rest[0]
+            ? `${c("red", "Error:")} Specify a name: ${c("blue", "'/profile shell <name>'")}`
+            : cmdShell(rest[0]));
+          break;
+
+        case "edit": {
+          const dir = rest[0] === "default" || !rest[0]
+            ? (rest[0] === "default" ? agentDir : (getCurrentProfile() ? getProfileDir(getCurrentProfile()!) : agentDir))
+            : getProfileDir(rest[0]);
+          try {
+            execSync(`start "" "${dir}"`, { shell: "cmd.exe", stdio: "ignore" });
+            emit(`${c("green", "✓")} Opening ${dir}`);
+          } catch {
+            emit(`${c("blue", "→")} Open manually: ${dir}`);
+          }
+          break;
         }
 
-      case "help":
-      case "--help":
-      case "-h":
-      case "":
-        return cmdHelp();
+        case "help":
+        case "--help":
+        case "-h":
+        case "":
+        case undefined:
+          emit(cmdHelp()); break;
 
-      default:
-        return `${c("red", "Unknown command:")} ${subcommand}\n${c("dim", "Run '/profile help' for usage.")}`;
-    }
+        default:
+          emit(`${c("red", "Unknown command:")} ${subcommand}\n${c("dim", "Run '/profile help' for usage.")}`);
+      }
+    },
   });
 
   // Register /profiles as alias
-  pi.registerCommand("profiles", async () => {
-    return cmdList();
+  pi.registerCommand("profiles", {
+    description: "List all pi coding agent profiles",
+    handler: async () => { emit(cmdList()); },
   });
 
   // ---------------------------------------------------------------------------
@@ -587,6 +614,11 @@ ${c("bold", "Profile Layout:")}
   // Tool: Profile Management Tool
   // ---------------------------------------------------------------------------
 
+  type ProfileParams = { action: string; name?: string; new_name?: string; from?: string; to?: string; file?: string };
+  function ok(text: string) {
+    return { content: [{ type: "text" as const, text }], details: undefined };
+  }
+
   pi.registerTool({
     name: "profile",
     label: "Profile",
@@ -599,75 +631,30 @@ ${c("bold", "Profile Layout:")}
           enum: ["list", "create", "use", "show", "delete", "rename", "copy", "export", "import", "shell", "edit"],
           description: "The profile action to perform"
         },
-        name: {
-          type: "string",
-          description: "Profile name (for create, use, show, delete, shell, edit)"
-        },
-        new_name: {
-          type: "string",
-          description: "New name (for rename)"
-        },
-        from: {
-          type: "string",
-          description: "Source profile (for copy)"
-        },
-        to: {
-          type: "string",
-          description: "Destination profile (for copy)"
-        },
-        file: {
-          type: "string",
-          description: "File path (for import/export)"
-        }
+        name:     { type: "string", description: "Profile name" },
+        new_name: { type: "string", description: "New name (for rename)" },
+        from:     { type: "string", description: "Source profile (for copy)" },
+        to:       { type: "string", description: "Destination profile (for copy)" },
+        file:     { type: "string", description: "File path (for import/export)" }
       },
       required: ["action"]
-    },
-    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-      const { action, name, new_name, from, to, file } = params;
-
+    } as any,
+    async execute(_toolCallId, rawParams, _signal, _onUpdate, _ctx) {
+      const { action, name, new_name, from, to, file } = rawParams as ProfileParams;
       switch (action) {
-        case "list":
-          return cmdList();
-        case "create":
-          if (!name) throw new Error("Profile name required");
-          return cmdCreate(name);
-        case "use":
-          if (!name) throw new Error("Profile name required");
-          return cmdUse(name);
-        case "show":
-          return cmdShow(name);
-        case "delete":
-          if (!name) throw new Error("Profile name required");
-          return cmdDelete(name);
-        case "rename":
-          if (!name || !new_name) throw new Error("Both old and new name required");
-          return cmdRename(name, new_name);
-        case "copy":
-          if (!from || !to) throw new Error("Both from and to names required");
-          return cmdCopy(from, to);
-        case "export":
-          return cmdExport(name);
-        case "import":
-          if (!file) throw new Error("File path required");
-          return cmdImport(file, name);
-        case "shell":
-          if (!name) throw new Error("Profile name required");
-          return cmdShell(name);
-        case "edit":
-          return cmdHelp();
-        default:
-          throw new Error(`Unknown action: ${action}`);
+        case "list":   return ok(cmdList());
+        case "create": if (!name) throw new Error("Profile name required"); return ok(cmdCreate(name));
+        case "use":    if (!name) throw new Error("Profile name required"); return ok(cmdUse(name));
+        case "show":   return ok(cmdShow(name));
+        case "delete": if (!name) throw new Error("Profile name required"); return ok(cmdDelete(name));
+        case "rename": if (!name || !new_name) throw new Error("Both old and new name required"); return ok(cmdRename(name, new_name));
+        case "copy":   if (!from || !to) throw new Error("Both from and to names required"); return ok(cmdCopy(from, to));
+        case "export": return ok(cmdExport(name));
+        case "import": if (!file) throw new Error("File path required"); return ok(cmdImport(file, name));
+        case "shell":  if (!name) throw new Error("Profile name required"); return ok(cmdShell(name));
+        case "edit":   return ok(cmdHelp());
+        default:       throw new Error(`Unknown action: ${action}`);
       }
     }
   });
-
-  // ---------------------------------------------------------------------------
-  // Extension Info
-  // ---------------------------------------------------------------------------
-
-  return {
-    name: "pi-profiles",
-    version: "1.0.0",
-    description: "Profile management for pi coding agent with isolated config, sessions, and skills per profile."
-  };
 }

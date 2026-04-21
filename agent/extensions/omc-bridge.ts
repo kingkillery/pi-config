@@ -9,6 +9,7 @@
  * it as a system-level instruction for the current turn.
  */
 
+import type { ExtensionAPI, ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
 import { existsSync, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
@@ -19,7 +20,7 @@ interface SkillDef {
 	content: string;
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
 	// Resolve agent dir: env var > active profile > default
 	const piBase = join(homedir(), ".pi");
 	const currentProfileFile = join(piBase, "current-profile");
@@ -131,7 +132,7 @@ export default function (pi: ExtensionAPI) {
 		const registerCmd = (cmdName: string) => {
 			pi.registerCommand(cmdName, {
 				description: meta.description,
-				handler: async (args, ctx) => {
+				handler: async (args: string, ctx: ExtensionCommandContext) => {
 					const skill = loadSkill(skillName);
 					if (!skill) {
 						ctx.ui.notify(
@@ -142,14 +143,11 @@ export default function (pi: ExtensionAPI) {
 					}
 
 					const userMessage = args?.trim() || "";
+					ctx.ui.notify(userMessage
+						? `Running /${cmdName}: ${userMessage.slice(0, 60)}...`
+						: `Activating ${skillName} mode`, "info");
 
-					if (userMessage) {
-						ctx.ui.notify(`Running /${cmdName}: ${userMessage.slice(0, 60)}...`, "info");
-					} else {
-						ctx.ui.notify(`Activating ${skillName} mode`, "info");
-					}
-
-					await ctx.session.prompt(buildSkillPrompt(skill, cmdName, userMessage));
+					await pi.sendUserMessage(buildSkillPrompt(skill, cmdName, userMessage));
 				},
 			});
 		};
@@ -166,7 +164,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerCommand("omc-skills", {
 		description: "List all available OMC skills",
-		handler: async (_args, ctx) => {
+		handler: async (_args: string, _ctx: ExtensionCommandContext) => {
 			const skills = listAvailableSkills();
 			const lines = [
 				"\x1b[1mOMC Skills\x1b[0m",
@@ -184,19 +182,14 @@ export default function (pi: ExtensionAPI) {
 				lines.push(`  \x1b[34m/${name}\x1b[0m${aliases} — ${meta.description}`);
 			}
 
-			lines.push("");
-			lines.push("\x1b[1mAll skills:\x1b[0m");
-			// Show in columns
+			lines.push("", "\x1b[1mAll skills:\x1b[0m");
 			const colWidth = 30;
 			const cols = 3;
 			for (let i = 0; i < skills.length; i += cols) {
-				const row = skills.slice(i, i + cols)
-					.map(s => s.padEnd(colWidth))
-					.join("");
-				lines.push("  " + row);
+				lines.push("  " + skills.slice(i, i + cols).map(s => s.padEnd(colWidth)).join(""));
 			}
 
-			return lines.join("\n");
+			pi.sendMessage({ customType: "omc-skills", content: lines.join("\n"), display: true });
 		},
 	});
 
@@ -206,7 +199,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerCommand("omc-run", {
 		description: "Run any OMC skill by name: /omc-run <skill> [args]",
-		handler: async (args, ctx) => {
+		handler: async (args: string, ctx: ExtensionCommandContext) => {
 			const parts = (args || "").trim().split(/\s+/);
 			const skillName = parts[0];
 			const rest = parts.slice(1).join(" ");
@@ -223,7 +216,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			ctx.ui.notify(`Running skill: ${skillName}`, "info");
-			await ctx.session.prompt(buildSkillPrompt(skill, skillName, rest));
+			await pi.sendUserMessage(buildSkillPrompt(skill, skillName, rest));
 		},
 	});
 
@@ -233,10 +226,10 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerCommand("cancel", {
 		description: "Cancel any active OMC execution mode",
-		handler: async (_args, ctx) => {
+		handler: async (_args: string, ctx: ExtensionCommandContext) => {
 			const cancelSkill = loadSkill("cancel");
 			if (cancelSkill) {
-				await ctx.session.prompt(cancelSkill.content);
+				await pi.sendUserMessage(cancelSkill.content);
 			} else {
 				ctx.ui.notify("OMC modes cancelled. Returning to normal operation.", "info");
 			}
@@ -247,9 +240,4 @@ export default function (pi: ExtensionAPI) {
 	// Extension info
 	// -----------------------------------------------------------------------
 
-	return {
-		name: "omc-bridge",
-		version: "1.0.0",
-		description: "OMC orchestration layer for pi coding agent — tier-0 skill commands and dispatch",
-	};
 }

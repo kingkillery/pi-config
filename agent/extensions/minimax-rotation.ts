@@ -21,6 +21,7 @@
  *   /rotate status       - Verbose stats
  */
 
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { join } from "path";
 import { homedir } from "os";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
@@ -65,16 +66,16 @@ const DEFAULT_STATE: RotationState = {
 const TRACKS = {
   glm: {
     label: "GLM 5.1",
-    /** Matchers for the native provider request */
     nativeProvider: "zai",
+    nativeModelId: "glm-5.1",
     nativeModelMatch: /glm/i,
-    /** Override values when routing to openrouter */
     openrouterProvider: "openrouter",
     openrouterModel: "z-ai/glm-5.1",
   },
   minimax: {
     label: "MiniMax M2.7",
     nativeProvider: "minimax",
+    nativeModelId: "MiniMax-M2.7-highspeed",
     nativeModelMatch: /minimax/i,
     openrouterProvider: "openrouter",
     openrouterModel: "minimax/minimax-m2.7",
@@ -83,7 +84,7 @@ const TRACKS = {
 
 type TrackName = keyof typeof TRACKS;
 
-export default function (pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI): void {
   const stateDir = join(homedir(), ".pi", "agent", "sessions");
   const stateFile = join(stateDir, "_provider-rotation-state.json");
 
@@ -128,18 +129,14 @@ export default function (pi: ExtensionAPI) {
   // Rotation logic
   // ---------------------------------------------------------------------------
 
-  function detectTrack(
-    provider: string,
-    model: string
-  ): TrackName | null {
-    // Skip if already routed to openrouter — prevents double-tick / re-override
-    if (provider === "openrouter") return null;
-
+  function detectTrack(provider: string, modelId: string): TrackName | null {
     for (const [name, def] of Object.entries(TRACKS)) {
-      if (
-        provider === def.nativeProvider ||
-        def.nativeModelMatch.test(model)
-      ) {
+      // Native provider match
+      if (provider === def.nativeProvider && def.nativeModelMatch.test(modelId)) {
+        return name as TrackName;
+      }
+      // Openrouter match (from a previous rotation turn)
+      if (provider === def.openrouterProvider && modelId === def.openrouterModel) {
         return name as TrackName;
       }
     }
@@ -215,77 +212,81 @@ export default function (pi: ExtensionAPI) {
   // Commands
   // ---------------------------------------------------------------------------
 
-  pi.registerCommand("rotate", async (args: string[]) => {
-    const [sub, ...rest] = args;
+  function emit(text: string): void {
+    pi.sendMessage({ customType: "rotate-output", content: text, display: true });
+  }
 
-    switch (sub) {
-      case "on":
-      case "enable": {
-        const s = load();
-        s.glm.enabled = true;
-        s.minimax.enabled = true;
-        save(s);
-        return `${fmt("green", "✓")} Both tracks enabled (cycle: ${s.every})`;
-      }
+  pi.registerCommand("rotate", {
+    description: "Show or control provider rotation for GLM and MiniMax (/rotate [on|off|glm|mm|every <N>|reset|status])",
+    handler: async (args) => {
+      const parts = args.trim().split(/\s+/).filter(Boolean);
+      const [sub, ...rest] = parts;
 
-      case "off":
-      case "disable": {
-        const s = load();
-        s.glm.enabled = false;
-        s.minimax.enabled = false;
-        save(s);
-        return `${fmt("yellow", "⚠")} Rotation off — native providers only`;
-      }
-
-      case "glm": {
-        const s = load();
-        const flag = rest[0];
-        if (flag === "off" || flag === "disable") {
-          s.glm.enabled = false;
-        } else {
+      switch (sub) {
+        case "on":
+        case "enable": {
+          const s = load();
           s.glm.enabled = true;
-        }
-        save(s);
-        return `${fmt("green", "✓")} GLM track: ${s.glm.enabled ? "ON" : "OFF"}`;
-      }
-
-      case "mm":
-      case "minimax": {
-        const s = load();
-        const flag = rest[0];
-        if (flag === "off" || flag === "disable") {
-          s.minimax.enabled = false;
-        } else {
           s.minimax.enabled = true;
+          save(s);
+          emit(`${fmt("green", "✓")} Both tracks enabled (cycle: ${s.every})`);
+          break;
         }
-        save(s);
-        return `${fmt("green", "✓")} MiniMax track: ${s.minimax.enabled ? "ON" : "OFF"}`;
-      }
 
-      case "every": {
-        const n = parseInt(rest[0], 10);
-        if (!n || n < 2 || n > 20) {
-          return `${fmt("red", "Error:")} Interval must be 2–20. Usage: ${fmt("blue", "/rotate every 3")}`;
+        case "off":
+        case "disable": {
+          const s = load();
+          s.glm.enabled = false;
+          s.minimax.enabled = false;
+          save(s);
+          emit(`${fmt("yellow", "⚠")} Rotation off — native providers only`);
+          break;
         }
-        const s = load();
-        s.every = n;
-        save(s);
-        return `${fmt("green", "✓")} Cycle set to ${fmt("cyan", String(n))} (${n - 1} native + 1 openrouter)`;
-      }
 
-      case "reset": {
-        save(JSON.parse(JSON.stringify(DEFAULT_STATE)));
-        return `${fmt("green", "✓")} All counters reset`;
-      }
+        case "glm": {
+          const s = load();
+          s.glm.enabled = rest[0] !== "off" && rest[0] !== "disable";
+          save(s);
+          emit(`${fmt("green", "✓")} GLM track: ${s.glm.enabled ? "ON" : "OFF"}`);
+          break;
+        }
 
-      case "status":
-      case "stats":
-        return showStatus(true);
+        case "mm":
+        case "minimax": {
+          const s = load();
+          s.minimax.enabled = rest[0] !== "off" && rest[0] !== "disable";
+          save(s);
+          emit(`${fmt("green", "✓")} MiniMax track: ${s.minimax.enabled ? "ON" : "OFF"}`);
+          break;
+        }
 
-      case "help":
-      case "--help":
-      case "-h":
-        return `
+        case "every": {
+          const n = parseInt(rest[0], 10);
+          if (!n || n < 2 || n > 20) {
+            emit(`${fmt("red", "Error:")} Interval must be 2–20. Usage: ${fmt("blue", "/rotate every 3")}`);
+            break;
+          }
+          const s = load();
+          s.every = n;
+          save(s);
+          emit(`${fmt("green", "✓")} Cycle set to ${fmt("cyan", String(n))} (${n - 1} native + 1 openrouter)`);
+          break;
+        }
+
+        case "reset":
+          save(JSON.parse(JSON.stringify(DEFAULT_STATE)));
+          emit(`${fmt("green", "✓")} All counters reset`);
+          break;
+
+        case "status":
+        case "stats":
+          emit(showStatus(true));
+          break;
+
+        case "help":
+        case "--help":
+        case "-h":
+          emit(`
 ${fmt("bold", "Provider Rotation Commands")}
 ${"─".repeat(42)}
   ${fmt("blue", "/rotate")}              Show current status
@@ -302,37 +303,42 @@ ${fmt("bold", "How it works (cycle=3):")}
   ${fmt("magenta", "MiniMax track:")} minimax → minimax → ${fmt("cyan", "openrouter")} → minimax → minimax → ${fmt("cyan", "openrouter")}
 
   Same model on every turn, just the provider rotates.
-`;
+`);
+          break;
 
-      default:
-        return showStatus(false);
-    }
+        default:
+          emit(showStatus(false));
+      }
+    },
   });
 
   // ---------------------------------------------------------------------------
-  // Hook: Intercept completions and rotate provider
+  // Hook: Rotate provider before each agent turn via setModel
   // ---------------------------------------------------------------------------
 
-  pi.on("before_completion", async (event: BeforeCompletionEvent, ctx) => {
-    const provider = event.provider || "";
-    const model = event.model || "";
+  pi.on("before_agent_start", async (_event, ctx) => {
+    const currentModel = ctx.model;
+    if (!currentModel) return;
 
-    const trackName = detectTrack(provider, model);
-    if (!trackName) return; // Not a tracked model, pass through
+    const provider: string = (currentModel as { provider?: string }).provider ?? "";
+    const modelId: string = (currentModel as { id?: string }).id ?? "";
+
+    const trackName = detectTrack(provider, modelId);
+    if (!trackName) return;
 
     const { useOpenrouter, state } = tick(trackName);
+    const def = TRACKS[trackName];
 
     if (useOpenrouter) {
-      const def = TRACKS[trackName];
-      event.override({
-        provider: def.openrouterProvider,
-        model: def.openrouterModel,
-      });
-
-      ctx.ui.notify(
-        `${def.label} turn ${state[trackName].turnCount}: → OpenRouter (rate-limit rotation)`,
-        "info"
-      );
+      const orModel = ctx.modelRegistry.find(def.openrouterProvider, def.openrouterModel);
+      if (orModel) {
+        await pi.setModel(orModel);
+        ctx.ui.notify(`${def.label} → OpenRouter (turn ${state[trackName].turnCount})`, "info");
+      }
+    } else if (provider === def.openrouterProvider) {
+      // Restore native model when coming off an openrouter rotation turn
+      const nativeModel = ctx.modelRegistry.find(def.nativeProvider, def.nativeModelId);
+      if (nativeModel) await pi.setModel(nativeModel);
     }
   });
 
@@ -340,10 +346,16 @@ ${fmt("bold", "How it works (cycle=3):")}
   // Tool: Programmatic access
   // ---------------------------------------------------------------------------
 
+  type RotateParams = { action: string; cycle?: number };
+  function ok(text: string) {
+    return { content: [{ type: "text" as const, text }], details: undefined };
+  }
+
   pi.registerTool({
     name: "provider_rotation",
     label: "Provider Rotation",
     description: "Check or configure provider rotation for GLM and MiniMax rate-limit management.",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     parameters: {
       type: "object",
       properties: {
@@ -358,62 +370,29 @@ ${fmt("bold", "How it works (cycle=3):")}
         },
       },
       required: ["action"],
-    },
-    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+    } as any,
+    async execute(_toolCallId, rawParams, _signal, _onUpdate, _ctx) {
+      const params = rawParams as RotateParams;
       const s = load();
       switch (params.action) {
-        case "status":
-          return showStatus(true);
-        case "enable":
-          s.glm.enabled = true;
-          s.minimax.enabled = true;
-          save(s);
-          return "Both tracks enabled";
-        case "disable":
-          s.glm.enabled = false;
-          s.minimax.enabled = false;
-          save(s);
-          return "Both tracks disabled";
-        case "enable_glm":
-          s.glm.enabled = true;
-          save(s);
-          return "GLM track enabled";
-        case "disable_glm":
-          s.glm.enabled = false;
-          save(s);
-          return "GLM track disabled";
-        case "enable_minimax":
-          s.minimax.enabled = true;
-          save(s);
-          return "MiniMax track enabled";
-        case "disable_minimax":
-          s.minimax.enabled = false;
-          save(s);
-          return "MiniMax track disabled";
+        case "status":   return ok(showStatus(true));
+        case "enable":   s.glm.enabled = s.minimax.enabled = true;  save(s); return ok("Both tracks enabled");
+        case "disable":  s.glm.enabled = s.minimax.enabled = false; save(s); return ok("Both tracks disabled");
+        case "enable_glm":   s.glm.enabled = true;  save(s); return ok("GLM track enabled");
+        case "disable_glm":  s.glm.enabled = false; save(s); return ok("GLM track disabled");
+        case "enable_minimax":  s.minimax.enabled = true;  save(s); return ok("MiniMax track enabled");
+        case "disable_minimax": s.minimax.enabled = false; save(s); return ok("MiniMax track disabled");
         case "set_cycle": {
           const n = params.cycle;
           if (!n || n < 2 || n > 20) throw new Error("Cycle must be 2–20");
-          s.every = n;
-          save(s);
-          return `Cycle set to ${n}`;
+          s.every = n; save(s); return ok(`Cycle set to ${n}`);
         }
         case "reset":
           save(JSON.parse(JSON.stringify(DEFAULT_STATE)));
-          return "All state reset";
+          return ok("All state reset");
         default:
           throw new Error(`Unknown action: ${params.action}`);
       }
     },
   });
-
-  // ---------------------------------------------------------------------------
-  // Extension Info
-  // ---------------------------------------------------------------------------
-
-  return {
-    name: "provider-rotation",
-    version: "2.0.0",
-    description:
-      "Two-track provider rotation: GLM (zai↔openrouter) and MiniMax (minimax↔openrouter) for rate-limit spreading.",
-  };
 }

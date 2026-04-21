@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "paths": {
+      "@mariozechner/pi-coding-agent": [
+        "C:/Users/prest/AppData/Roaming/npm/node_modules/@mariozechner/pi-coding-agent/dist/index.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "*.ts",
+    "!*.test.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "_disabled",
+    "zelda-overlay",
+    "youtube-overlay"
+  ]
+}
