@@ -1,6 +1,6 @@
 ---
 name: code-review-and-quality
-description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
+description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by another agent or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
 tags:
   - code-review
   - quality
@@ -29,6 +29,8 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 - When another agent or model produced code you need to evaluate
 - When refactoring existing code
 - After any bug fix (review both the fix and the regression test)
+
+If you authored the change, treat your checks as implementation verification rather than final approval. When an independent reviewer is available, hand off the final review pass; when one is not available, clearly state that the review is not independent.
 
 ## The Five-Axis Review
 
@@ -255,12 +257,12 @@ When resolving review disputes, apply this hierarchy:
 
 ## Honesty in Review
 
-When reviewing code -- whether written by you, another agent, or a human:
+When reviewing code written by another agent or a human:
 
 - **Don't rubber-stamp.** "LGTM" without evidence of review helps no one.
 - **Don't soften real issues.** "This might be a minor concern" when it's a bug that will hit production is dishonest.
 - **Quantify problems when possible.** "This N+1 query will add ~50ms per item in the list" is better than "this could be slow."
-- **Push back on approaches with clear problems.** Sycophancy is a failure mode in reviews. If the implementation has issues, say so directly and propose alternatives.
+- **Push back on approaches with clear problems.** Overly agreeable reviews miss defects. If the implementation has issues, say so directly and propose alternatives.
 - **Accept override gracefully.** If the author has full context and disagrees, defer to their judgment. Comment on code, not people -- reframe personal critiques to focus on the code itself.
 
 ## Dependency Discipline
