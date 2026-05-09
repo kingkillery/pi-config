@@ -76,7 +76,7 @@ For detailed security guidance, see `security-and-hardening`. Does the change in
 - Is authentication/authorization checked where needed?
 - Are SQL queries parameterized (no string concatenation)?
 - Are outputs encoded to prevent XSS?
-- Are dependencies from trusted sources with no known vulnerabilities?
+- Are dependencies from trusted sources with no reported vulnerabilities?
 - Is data from external sources (APIs, logs, user content, config files) treated as untrusted?
 - Are external data flows validated at system boundaries before use in logic or rendering?
 
@@ -270,8 +270,8 @@ Part of code review is dependency review:
 **Before adding any dependency:**
 1. Does the existing stack solve this? (Often it does.)
 2. How large is the dependency? (Check bundle impact.)
-3. Is it actively maintained? (Check last commit, open issues.)
-4. Does it have known vulnerabilities? (`npm audit`)
+3. Is it actively maintained? (Check last commit and issue tracker activity.)
+4. Does it have reported vulnerabilities? (`npm audit`)
 5. What's the license? (Must be compatible with the project.)
 
 **Rule:** Prefer standard library and existing utilities over new dependencies. Every dependency is a liability.
