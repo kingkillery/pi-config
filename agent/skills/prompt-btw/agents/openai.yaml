@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt BTW"
+  short_description: "Optimize pasted prompts as a side request"
+  default_prompt: "Paste raw prompt/data and optimize it with prompt-optimizer."
