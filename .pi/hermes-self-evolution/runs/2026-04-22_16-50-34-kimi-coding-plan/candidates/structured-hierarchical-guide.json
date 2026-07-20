@@ -1,0 +1,64 @@
+{
+  "rationale": "This candidate balances narrative clarity with reference utility by grouping models into capability tiers, repairing consistency with a K1.5 entry and K2.6 bullets, and surfacing the API base URL alongside a copy-pasteable Python example that uses documented moonshot-v1 identifiers. It explicitly states Kimi-Dev is not confirmed for API use, recommends K2.5/K2.6 for IDE autocomplete, and covers self-hosting by citing Ollama and vLLM while noting that MoE variable sparsity prevents stating fixed hardware requirements.",
+  "warnings": [],
+  "evaluation": {
+    "aggregate": {
+      "correctness": 0.8666666666666667,
+      "procedureFollowing": 0.8166666666666668,
+      "conciseness": 0.9166666666666666,
+      "confidence": 0.9166666666666666,
+      "lengthPenalty": 0.19514155889549112,
+      "composite": 0.6665251077711756
+    },
+    "examples": [
+      {
+        "example": {
+          "taskInput": "Can I use Kimi K2 in a commercial product with 150 million monthly active users? What are the license restrictions?",
+          "expectedBehavior": "Cites the modified MIT license. States attribution or commercial terms are required if products exceed 100M MAU or $20M monthly revenue. Answers yes with conditions.",
+          "difficulty": "easy",
+          "category": "licensing",
+          "source": "synthetic"
+        },
+        "composite": 1,
+        "responsePreview": "Yes. Kimi K2 is released under a modified MIT license that permits commercial use, but because your product has 150 million MAU—exceeding the 100 million MAU threshold—you must provide attribution. The same attribution requirement applies if monthly revenue exceeds $20 million.",
+        "correctness": 1,
+        "procedureFollowing": 1,
+        "conciseness": 1,
+        "feedback": "The artifact contains the exact licensing thresholds in the Notes section, enabling a direct, accurate answer. No procedural gaps for this query.",
+        "confidence": 1
+      },
+      {
+        "example": {
+          "taskInput": "What model does 'Kimi for coding' actually use under the hood?",
+          "expectedBehavior": "Distinguishes between the dedicated coding model (Kimi-Dev, 72B, SWE-bench SOTA) and general assistant coding (Kimi K2.5/K2.6 or K2 Thinking). Offers to clarify whether the user means the web assistant, API integration, or an IDE plugin.",
+          "difficulty": "medium",
+          "category": "model-selection",
+          "source": "session"
+        },
+        "composite": 0.585,
+        "responsePreview": "The agent would explain there is no single 'Kimi for coding' model, distinguishing Kimi-Dev (72B, dedicated coding, SWE-bench SOTA) from general-purpose options like K2.5, K2.6, or K2 Thinking used for API-based coding tasks. It would likely reference the 'When to Use Which' table and note that Kimi-Dev is not confirmed on the Moonshot API. However, it would probably only ask whether the user means the API or a self-hosted deployment, omitting web assistant or IDE plugin contexts entirely because those are not covered in the artifact.",
+        "correctness": 0.6,
+        "procedureFollowing": 0.45,
+        "conciseness": 0.75,
+        "feedback": "Add an explicit product-to-model mapping that labels web assistant, IDE plugin, and API endpoint variants. Include a disambiguation step in the workflow that prompts the user to clarify their interface (web/API/IDE/self-hosted) before answering 'under the hood' questions, and reconcile the API example model ID with the model options table.",
+        "confidence": 0.75
+      },
+      {
+        "example": {
+          "taskInput": "How many tokens can I send to Kimi K2 Thinking when doing a multi-step agentic debugging session?",
+          "expectedBehavior": "States 256K tokens for K2 Thinking. May mention support for 200-300 sequential tool calls. Must not conflate with K1.5's 128K context.",
+          "difficulty": "easy",
+          "category": "context-window",
+          "source": "session"
+        },
+        "composite": 1,
+        "responsePreview": "Kimi K2 Thinking has a 256K token context window, and it supports 200–300 sequential autonomous tool calls for multi-step agentic debugging sessions.",
+        "correctness": 1,
+        "procedureFollowing": 1,
+        "conciseness": 1,
+        "feedback": "Artifact explicitly maps K2 Thinking to 256K tokens and lists its sequential tool-call depth; agent can answer accurately without conflating K1.5’s 128K limit.",
+        "confidence": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "IX Code Mode"
+  short_description: "Use one local Python pass for multi-step IX analysis."
+  default_prompt: "Use a single local Python execution to analyze the interconnection data files, return a structured result, and avoid many fragmented shell reads."

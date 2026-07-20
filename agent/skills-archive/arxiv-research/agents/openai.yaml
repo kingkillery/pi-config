@@ -1,0 +1,3 @@
+display_name: arXiv Research
+short_description: Find, rank, and synthesize arXiv papers with primary-source grounding.
+default_prompt: Find the most relevant arXiv papers for this research question, rank the closest matches, and identify the main gaps.

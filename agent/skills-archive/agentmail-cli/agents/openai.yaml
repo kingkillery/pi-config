@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgentMail CLI"
+  short_description: "Read inboxes and extract verification codes."
+  default_prompt: "Use the AgentMail CLI to resolve the inbox, inspect unread messages, and extract the newest verification code without asking the operator to paste it."

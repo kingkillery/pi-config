@@ -1,0 +1,6 @@
+interface:
+  display_name: "Field Spreadsheet"
+  short_description: "Refresh, modify, or explain the Field Work Report workbook and its data / formula setup."
+  default_prompt: "$field-spreadsheet refresh or explain the Field Work Report workbook using the local CSV exports and workbook formula map"
+policy:
+  allow_implicit_invocation: true

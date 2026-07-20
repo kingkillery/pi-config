@@ -1,25 +1,250 @@
 {
   "providers": {
-    "openrouter": {
-      "baseUrl": "https://openrouter.ai/api/v1",
+    "9router": {
+      "baseUrl": "http://127.0.0.1:20128/v1",
       "api": "openai-completions",
-      "apiKey": "OPENROUTER_API_KEY",
+      "apiKey": "0807068e770c2da7",
       "models": [
         {
-          "id": "z-ai/glm-5.1",
-          "name": "GLM 5.1 (OpenRouter)",
+          "id": "openrouter-free-fallback",
+          "name": "OpenRouter Free Fallback (9router)",
           "reasoning": false,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 131072,
           "maxTokens": 16384
         },
         {
-          "id": "minimax/minimax-m2.7",
-          "name": "MiniMax M2.7 (OpenRouter)",
+          "id": "cx/gpt-5.5",
+          "name": "GPT-5.5 via 9router (ChatGPT)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 400000,
+          "maxTokens": 65536
+        },
+        {
+          "id": "cc/claude-opus-4-8",
+          "name": "Claude Opus 4.8 via 9router (Claude OAuth)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 200000,
+          "maxTokens": 32768
+        },
+        {
+          "id": "kimi/kimi-k2.6",
+          "name": "Kimi K2.6 via 9router",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "minimax/MiniMax-M3",
+          "name": "MiniMax M3 via 9router (1M context)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 32768
+        },
+        {
+          "id": "gemini-3-5-flash-medium-round-robin",
+          "name": "Gemini 3.5 Flash Medium round-robin via 9router",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 1048576,
+          "maxTokens": 16384
+        },
+        {
+          "id": "qwen-team/deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash via 9router (qwen-team)",
           "reasoning": false,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 131072,
           "maxTokens": 16384
+        }
+      ]
+    },
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "api": "openai-completions",
+      "apiKey": "$OPENROUTER_API_KEY",
+      "models": [
+        {
+          "id": "inclusionai/ring-2.6-1t:free",
+          "name": "Ring 2.6 1T (OpenRouter Free)",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 16384
+        },
+        {
+          "id": "baidu/cobuddy:free",
+          "name": "CoBuddy (OpenRouter Free)",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 16384
+        },
+        {
+          "id": "openrouter/owl-alpha",
+          "name": "Owl Alpha (OpenRouter Free)",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 16384
+        },
+        {
+          "id": "deepseek/deepseek-v4-flash:free",
+          "name": "DeepSeek V4 Flash (Free - OpenRouter)",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 16384,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
+        }
+      ]
+    },
+    "google": {
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "api": "google-generative-ai",
+      "apiKey": "$GEMINI_API_KEY",
+      "models": [
+        {
+          "id": "gemini-3-flash-preview",
+          "name": "Gemini 3 Flash Preview (Google AI Studio)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 1048576,
+          "maxTokens": 8192
+        },
+        {
+          "id": "gemini-3.1-pro-preview",
+          "name": "Gemini 3.1 Pro Preview (Google AI Studio)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 1048576,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    "kimi": {
+      "baseUrl": "https://api.kimi.com/coding/v1",
+      "api": "openai-completions",
+      "apiKey": "$KIMI_API_KEY",
+      "headers": {
+        "User-Agent": "claude-code/0.1.0"
+      },
+      "models": [
+        {
+          "id": "kimi-for-coding",
+          "name": "Kimi for Coding",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "nvidia": {
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "api": "openai-completions",
+      "apiKey": "$NVIDIA_API_KEY",
+      "models": [
+        {
+          "id": "meta/llama-3.1-8b-instruct",
+          "name": "Llama 3.1 8B (NVIDIA NIM)",
+          "input": [
+            "text"
+          ],
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        },
+        {
+          "id": "meta/llama-3.3-70b-instruct",
+          "name": "Llama 3.3 70B (NVIDIA NIM)",
+          "input": [
+            "text"
+          ],
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        },
+        {
+          "id": "nvidia/llama-3.3-nemotron-super-49b-v1",
+          "name": "Nemotron Super 49B (NVIDIA NIM)",
+          "input": [
+            "text"
+          ],
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        },
+        {
+          "id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+          "name": "Nemotron Ultra 253B (NVIDIA NIM)",
+          "input": [
+            "text"
+          ],
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        },
+        {
+          "id": "deepseek-ai/deepseek-r1",
+          "name": "DeepSeek-R1 (NVIDIA NIM)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        },
+        {
+          "id": "qwen/qwen2.5-coder-32b-instruct",
+          "name": "Qwen 2.5 Coder 32B (NVIDIA NIM)",
+          "input": [
+            "text"
+          ],
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        },
+        {
+          "id": "nvidia/nv-embedqa-e5-v5",
+          "name": "NV-Embed-QA (NVIDIA NIM)",
+          "input": [
+            "text"
+          ],
+          "contextWindow": 512,
+          "maxTokens": 512
         }
       ]
     },
@@ -36,28 +261,165 @@
           "id": "omnicoder-9b",
           "name": "OmniCoder 9B (LM Studio)",
           "reasoning": false,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 131072,
           "maxTokens": 16384,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
         },
         {
           "id": "qwen3.5-9b-uncensored-hauhaucs-aggressive",
           "name": "Qwen 3.5 9B Aggressive (LM Studio)",
           "reasoning": false,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 131072,
           "maxTokens": 16384,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
         },
         {
           "id": "qwen3.5-2b-uncensored-hauhaucs-aggressive",
           "name": "Qwen 3.5 2B Aggressive (LM Studio)",
           "reasoning": false,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 131072,
           "maxTokens": 16384,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
+        }
+      ]
+    },
+    "codex-appserver": {
+      "baseUrl": "http://127.0.0.1:5010/v1",
+      "api": "openai-responses",
+      "apiKey": "codex-appserver",
+      "models": [
+        {
+          "id": "gpt-5.5",
+          "name": "GPT-5.5 via Codex Appserver",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null
+          },
+          "input": [
+            "text"
+          ],
+          "contextWindow": 400000,
+          "maxTokens": 65536,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "compat": {
+            "supportsReasoningEffort": true,
+            "supportsDeveloperRole": true
+          }
+        },
+        {
+          "id": "gpt-5.5-pro",
+          "name": "GPT-5.5 Pro via Codex Appserver",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null
+          },
+          "input": [
+            "text"
+          ],
+          "contextWindow": 400000,
+          "maxTokens": 65536,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "compat": {
+            "supportsReasoningEffort": true,
+            "supportsDeveloperRole": true
+          }
+        }
+      ]
+    },
+    "siliconflow": {
+      "baseUrl": "https://api.siliconflow.com/v1",
+      "api": "openai-completions",
+      "apiKey": "$SILICONFLOW_API_KEY",
+      "models": [
+        {
+          "id": "deepseek-ai/DeepSeek-R1",
+          "name": "DeepSeek R1 (SiliconFlow)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 64000,
+          "maxTokens": 8192
+        },
+        {
+          "id": "deepseek-ai/DeepSeek-V3",
+          "name": "DeepSeek V3 (SiliconFlow)",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 64000,
+          "maxTokens": 8192
+        },
+        {
+          "id": "deepseek-ai/DeepSeek-V4-Flash",
+          "name": "DeepSeek V4 Flash (SiliconFlow - Mid)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 1048576,
+          "maxTokens": 8192,
+          "cost": {
+            "input": 0.14,
+            "output": 0.41,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
+        },
+        {
+          "id": "tencent/Hy3-preview",
+          "name": "HY3 Preview (SiliconFlow)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 8192
         }
       ]
     }

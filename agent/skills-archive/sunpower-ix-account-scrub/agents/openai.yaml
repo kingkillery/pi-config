@@ -1,0 +1,4 @@
+interface:
+  display_name: "SunPower IX Account Scrub"
+  short_description: "Scrub IX notes, bucket clawbacks, and build review sheets."
+  default_prompt: "Scrub this SunPower interconnection account list into concise status notes or a clawback review sheet, keep the source bucket as Existing Bucket, add a Suggested Bucket with rationale, and verify each strong claim against current exports, task logs, and main-sheet context."

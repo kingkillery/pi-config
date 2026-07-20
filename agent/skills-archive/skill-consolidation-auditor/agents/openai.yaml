@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Consolidation Auditor"
+  short_description: "Audit and rewrite overlapping skills around user intent."
+  default_prompt: "Audit a skills directory for DRY consolidation opportunities, preserve hard constraints, and draft merged skills with decision trees and validation checks."

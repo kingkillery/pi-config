@@ -1,0 +1,6 @@
+interface:
+  display_name: "PK Sweeper"
+  short_description: "Run conservative GitHub issue/PR sweeps"
+  default_prompt: "Use $pk-sweeper to run a safe PK Sweeper sweep from the target repository checkout."
+policy:
+  allow_implicit_invocation: true

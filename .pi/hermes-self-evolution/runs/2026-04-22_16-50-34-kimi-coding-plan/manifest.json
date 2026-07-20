@@ -1,0 +1,58 @@
+{
+  "targetPath": "C:/Users/prest/.pi/hermes-self-evolution/kimi-coding-plan.md",
+  "objective": "Improve clarity, add actionable integration steps, and ensure the plan is immediately usable by a developer choosing a Kimi model for coding tasks.",
+  "evalSource": "mixed",
+  "modelLabel": "kimi/kimi-for-coding",
+  "maxBytes": 2861,
+  "baselineHoldout": {
+    "correctness": 0.9666666666666667,
+    "procedureFollowing": 0.9333333333333332,
+    "conciseness": 0.9500000000000001,
+    "confidence": 0.9166666666666666,
+    "lengthPenalty": 0,
+    "composite": 0.9533333333333333
+  },
+  "bestCandidate": {
+    "name": "decision-table-reference",
+    "rationale": "This candidate optimizes for scanability by placing a scenario-to-model decision table at the top, followed by compact model details that explicitly flag Kimi-Dev’s unconfirmed API status, add the missing K1.5 entry, and add K2.6 capability bullets. It keeps the API reference tight with the exact base URL and a minimal Python block, and it handles self-hosting by naming inference frameworks and the MoE architecture while refusing to invent hardware commands or VRAM figures.",
+    "score": {
+      "correctness": 0.8666666666666667,
+      "procedureFollowing": 0.85,
+      "conciseness": 0.9333333333333332,
+      "confidence": 0.9,
+      "lengthPenalty": 0,
+      "composite": 0.875
+    },
+    "warnings": [],
+    "path": "C:\\Users\\prest\\.pi\\.pi\\hermes-self-evolution\\runs\\2026-04-22_16-50-34-kimi-coding-plan\\best-candidate.md"
+  },
+  "candidates": [
+    {
+      "name": "decision-table-reference",
+      "rationale": "This candidate optimizes for scanability by placing a scenario-to-model decision table at the top, followed by compact model details that explicitly flag Kimi-Dev’s unconfirmed API status, add the missing K1.5 entry, and add K2.6 capability bullets. It keeps the API reference tight with the exact base URL and a minimal Python block, and it handles self-hosting by naming inference frameworks and the MoE architecture while refusing to invent hardware commands or VRAM figures.",
+      "warnings": [],
+      "score": {
+        "correctness": 0.8666666666666667,
+        "procedureFollowing": 0.85,
+        "conciseness": 0.9333333333333332,
+        "confidence": 0.9,
+        "lengthPenalty": 0,
+        "composite": 0.875
+      }
+    },
+    {
+      "name": "structured-hierarchical-guide",
+      "rationale": "This candidate balances narrative clarity with reference utility by grouping models into capability tiers, repairing consistency with a K1.5 entry and K2.6 bullets, and surfacing the API base URL alongside a copy-pasteable Python example that uses documented moonshot-v1 identifiers. It explicitly states Kimi-Dev is not confirmed for API use, recommends K2.5/K2.6 for IDE autocomplete, and covers self-hosting by citing Ollama and vLLM while noting that MoE variable sparsity prevents stating fixed hardware requirements.",
+      "warnings": [],
+      "score": {
+        "correctness": 0.8666666666666667,
+        "procedureFollowing": 0.8166666666666668,
+        "conciseness": 0.9166666666666666,
+        "confidence": 0.9166666666666666,
+        "lengthPenalty": 0.19514155889549112,
+        "composite": 0.6665251077711756
+      }
+    }
+  ],
+  "createdAt": "2026-04-22T17:03:36.108Z"
+}

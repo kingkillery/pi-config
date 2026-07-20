@@ -45,3 +45,8 @@ root-artifacts/
 
 # Imported skills (large external package, not owned here)
 agent/skills/pk-skills1-imported/
+
+# Large pk-skills1 duplicate trees (kept on disk, not config)
+agent/pk-skills1-imported/
+agent/TEMP-Skills/
+agent/run-history.jsonl

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Prioritization"
+  short_description: "Turn IX data into ranked action queues."
+  default_prompt: "Use the local interconnection exports and workbook context to produce a prioritized action list, clearly separating overdue, unscheduled, and future-scheduled work."

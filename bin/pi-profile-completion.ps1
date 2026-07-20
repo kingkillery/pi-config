@@ -32,10 +32,10 @@ function prompt {
 }
 
 Set-Alias -Name pp -Value pi-profile
-Set-Alias -Name ppl -Value { pi-profile list }
-Set-Alias -Name ppc -Value { pi-profile create }
-Set-Alias -Name ppu -Value { pi-profile use }
-Set-Alias -Name pps -Value { pi-profile show }
+function ppl { pi-profile list @args }
+function ppc { pi-profile create @args }
+function ppu { pi-profile use @args }
+function pps { pi-profile show @args }
 
 function pw { $env:PI_PROFILE = "work"; pi $args }
 function ppe { $env:PI_PROFILE = "personal"; pi $args }
@@ -62,5 +62,15 @@ function psessions {
     }
 }
 
-Write-Host "pi-profile loaded. Use 'pp' for 'pi-profile', 'ppl' for list, etc." -ForegroundColor Green
-Write-Host "Quick access: 'pw' for work profile, 'ppe' for personal profile" -ForegroundColor Green
+$piProfileArguments = [Environment]::GetCommandLineArgs()
+$piProfileIsInteractive =
+    ($piProfileArguments -contains '-NoExit') -or
+    (
+        -not [Console]::IsInputRedirected -and
+        -not ($piProfileArguments | Where-Object { $_ -match '^(?i:-(?:Command|C|EncodedCommand|Enc|File|F|NonInteractive))$' })
+    )
+
+if ($piProfileIsInteractive) {
+    Write-Host "pi-profile loaded. Use 'pp' for 'pi-profile', 'ppl' for list, etc." -ForegroundColor Green
+    Write-Host "Quick access: 'pw' for work profile, 'ppe' for personal profile" -ForegroundColor Green
+}

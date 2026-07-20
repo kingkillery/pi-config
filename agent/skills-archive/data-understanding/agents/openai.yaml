@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Understanding"
+  short_description: "Check local IX data freshness and available inputs."
+  default_prompt: "Inspect the local interconnection data files, report what is current or stale, and recommend the next repo-local skill to use."

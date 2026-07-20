@@ -1,27 +1,28 @@
 {
-  "lastChangelogVersion": "0.68.0",
-  "defaultProvider": "openrouter",
-  "defaultModel": "z-ai/glm-5.1",
+  "lastChangelogVersion": "0.80.10",
+  "defaultProvider": "kimi-coding",
+  "defaultModel": "k3",
   "shellPath": "C:\\Program Files\\Git\\usr\\bin\\bash.exe",
   "enabledModels": [
-    "zai/glm-5.1",
-    "minimax/MiniMax-M2.7-highspeed",
+    "9router/*",
     "openai-codex/gpt-5.4",
-    "openrouter/z-ai/glm-5.1",
-    "openrouter/minimax/minimax-m2.7"
+    "google/gemini-3-flash-preview",
+    "google/gemini-3.1-pro-preview",
+    "openrouter/inclusionai/ring-2.6-1t:free",
+    "openrouter/baidu/cobuddy:free",
+    "openrouter/openrouter/owl-alpha",
+    "openrouter/deepseek/deepseek-v4-flash:free",
+    "siliconflow/deepseek-ai/DeepSeek-R1",
+    "siliconflow/deepseek-ai/DeepSeek-V3",
+    "siliconflow/deepseek-ai/DeepSeek-V4-Flash",
+    "siliconflow/tencent/Hy3-preview",
+    "kimi/kimi-for-coding"
   ],
-  "packages": [
-    "npm:@aliou/pi-guardrails",
-    "npm:pi-ask-user",
-    "npm:pk-pi-hermes-evolve",
-    "npm:pi-llm-as-verifier",
-    "npm:pi-speak-pk@latest",
-    "npm:pi-subagents"
-  ],
+  "packages": [],
   "extensions": [
     "C:\\dev\\Desktop-Projects\\pi-speak-extension\\dist\\index.js"
   ],
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "max",
   "followUpMode": "one-at-a-time",
   "autocompleteMaxVisible": 20,
   "hideThinkingBlock": true

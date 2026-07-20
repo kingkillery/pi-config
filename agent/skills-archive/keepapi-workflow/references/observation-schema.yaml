@@ -1,0 +1,35 @@
+skill_run:
+  timestamp: string
+  skill_version: string
+  success: boolean
+
+  # Per-section breakdown
+  sections:
+    main:
+      found: integer
+      scroll_height_px: integer
+    archive:
+      found: integer
+      scroll_height_px: integer
+    trash:
+      found: integer
+      scroll_height_px: integer
+
+  # Totals
+  total_saved: integer
+  total_skipped: integer
+
+  # Paths
+  vault_dir: string
+  chrome_profile_dir: string
+
+  # Chrome state
+  chrome_port: integer
+  chrome_reused: boolean
+
+  # Errors and warnings
+  errors: array of string
+  warnings: array of string
+
+  # Performance
+  duration_seconds: float

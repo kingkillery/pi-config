@@ -1,0 +1,6 @@
+interface:
+  display_name: "IX Daily Email Template"
+  short_description: "Build the daily IX executive email HTML from refreshed reports."
+  default_prompt: "$ix-daily-email-template create today's copy-paste daily IX email HTML after validating refreshed Salesforce and Field Work Report data"
+policy:
+  allow_implicit_invocation: true

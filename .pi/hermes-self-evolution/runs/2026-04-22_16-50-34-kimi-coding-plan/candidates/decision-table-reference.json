@@ -1,0 +1,64 @@
+{
+  "rationale": "This candidate optimizes for scanability by placing a scenario-to-model decision table at the top, followed by compact model details that explicitly flag Kimi-Dev’s unconfirmed API status, add the missing K1.5 entry, and add K2.6 capability bullets. It keeps the API reference tight with the exact base URL and a minimal Python block, and it handles self-hosting by naming inference frameworks and the MoE architecture while refusing to invent hardware commands or VRAM figures.",
+  "warnings": [],
+  "evaluation": {
+    "aggregate": {
+      "correctness": 0.8666666666666667,
+      "procedureFollowing": 0.85,
+      "conciseness": 0.9333333333333332,
+      "confidence": 0.9,
+      "lengthPenalty": 0,
+      "composite": 0.875
+    },
+    "examples": [
+      {
+        "example": {
+          "taskInput": "Can I use Kimi K2 in a commercial product with 150 million monthly active users? What are the license restrictions?",
+          "expectedBehavior": "Cites the modified MIT license. States attribution or commercial terms are required if products exceed 100M MAU or $20M monthly revenue. Answers yes with conditions.",
+          "difficulty": "easy",
+          "category": "licensing",
+          "source": "synthetic"
+        },
+        "composite": 1,
+        "responsePreview": "Yes, but conditions apply. Kimi K2 is released under a modified MIT license. The artifact states that attribution is required if the product exceeds 100M MAU or $20M monthly revenue. Because your product has 150M MAU, you must comply with that attribution requirement.",
+        "correctness": 1,
+        "procedureFollowing": 1,
+        "conciseness": 1,
+        "feedback": "Artifact enables a correct, conditional answer. Could optionally clarify whether attribution means a notice string or a broader commercial agreement, but the existing note is sufficient.",
+        "confidence": 1
+      },
+      {
+        "example": {
+          "taskInput": "What model does 'Kimi for coding' actually use under the hood?",
+          "expectedBehavior": "Distinguishes between the dedicated coding model (Kimi-Dev, 72B, SWE-bench SOTA) and general assistant coding (Kimi K2.5/K2.6 or K2 Thinking). Offers to clarify whether the user means the web assistant, API integration, or an IDE plugin.",
+          "difficulty": "medium",
+          "category": "model-selection",
+          "source": "session"
+        },
+        "composite": 0.625,
+        "responsePreview": "It depends on the scenario. Kimi-Dev is the dedicated 72B coding model (based on Qwen2.5-72B) and is SOTA on SWE-bench, though its availability on the Moonshot API is currently unconfirmed. For API-based or IDE coding tasks, Moonshot routes general coding to the K2 series—typically K2.5, K2.6, or K2 Thinking depending on task complexity. To give you the exact 'under the hood' model, could you clarify whether you mean the API integration or an IDE plugin?",
+        "correctness": 0.6,
+        "procedureFollowing": 0.55,
+        "conciseness": 0.8,
+        "feedback": "Add a section mapping specific interfaces and products (web assistant, API, IDE plugin) to their backend models; the current artifact only maps scenarios. Clarify Kimi-Dev's platform availability so the agent can disambiguate 'dedicated coding model' vs 'general assistant coding' definitively.",
+        "confidence": 0.75
+      },
+      {
+        "example": {
+          "taskInput": "How many tokens can I send to Kimi K2 Thinking when doing a multi-step agentic debugging session?",
+          "expectedBehavior": "States 256K tokens for K2 Thinking. May mention support for 200-300 sequential tool calls. Must not conflate with K1.5's 128K context.",
+          "difficulty": "easy",
+          "category": "context-window",
+          "source": "session"
+        },
+        "composite": 1,
+        "responsePreview": "Kimi K2 Thinking supports a 256K token context window. For multi-step agentic debugging, it also handles 200–300 autonomous tool calls.",
+        "correctness": 1,
+        "procedureFollowing": 1,
+        "conciseness": 1,
+        "feedback": "No changes needed. The artifact states the 256K limit twice (Model Details and Context Windows) and links K2 Thinking to complex debugging, so the agent extracts the exact answer without conflating it with K1.5's 128K.",
+        "confidence": 0.95
+      }
+    ]
+  }
+}

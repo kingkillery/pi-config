@@ -1,0 +1,4 @@
+interface:
+  display_name: "Salesforce Dataset Refresh"
+  short_description: "Refresh recurring Salesforce datasets."
+  default_prompt: "Refresh the recurring Salesforce report datasets, save the five contract CSVs under General Salesforce Reports, and record any new blockers or fixes."
